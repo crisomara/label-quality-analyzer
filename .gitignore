@@ -1,0 +1,8 @@
+.venv/
+data/raw/cifar10/
+data/label_quality.db
+data/cache/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.env
