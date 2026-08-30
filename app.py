@@ -52,6 +52,19 @@ def live_precision_recall(df: pd.DataFrame):
         len(confirmed), int(confirmed["cl_flagged"].sum())
 
 
+def live_classifier_accuracy(df: pd.DataFrame):
+    correct = df["true_label_name"] == df["predicted_label_name"]
+    overall = correct.mean()
+    per_class = (
+        pd.DataFrame({"true_label_name": df["true_label_name"], "correct": correct})
+        .groupby("true_label_name")["correct"].mean()
+        .sort_values()
+        .reset_index()
+        .rename(columns={"correct": "accuracy"})
+    )
+    return overall, per_class
+
+
 st.title("Label Quality Analyzer")
 st.caption(
     "A confident-learning QA pipeline that flags likely mislabeled CIFAR-10 images "
@@ -59,24 +72,72 @@ st.caption(
     "[Full case study](https://github.com/crisomara/label-quality-analyzer/blob/master/reports/case_study.md) · "
     "[Source](https://github.com/crisomara/label-quality-analyzer)"
 )
-
-precision, recall, n_reviewed_flagged, n_confirmed_in_reviewed, n_confirmed, n_confirmed_caught = \
-    live_precision_recall(val_df)
-
-k1, k2, k3, k4 = st.columns(4)
-k1.metric("Precision (reviewed pool)", f"{precision:.1%}", f"{n_confirmed_in_reviewed}/{n_reviewed_flagged}")
-k2.metric("Recall (known errors)", f"{recall:.1%}", f"{n_confirmed_caught}/{n_confirmed}")
-k3.metric("Baseline classifier accuracy", f"{summary['baseline_accuracy_pct']}%", "5-fold CV, frozen MobileNetV2")
-k4.metric("Images flagged", f"{summary['n_flagged']:,}", f"of {summary['n_total']:,} total")
-st.caption(
-    "Precision and recall above are computed live, in this app, by joining the "
-    "review queue against the published `cleanlab/label-errors` ground truth "
-    "bundled in `demo_assets/` — not hardcoded from the case study."
+st.info(
+    "This project asks two separate questions, and it's easy to conflate them: "
+    "**(1) how well does the model classify images?** (see the *Classifier "
+    "performance* tab) and **(2) how well does an automated QA process catch "
+    "mislabeled images in an already-clean dataset?** (see *Review queue explorer* "
+    "and *Where the errors live*). A low QA precision/recall doesn't mean the "
+    "classifier itself is bad — it means finding a 0.5%-error-rate needle in a "
+    "haystack is a much harder task than ordinary classification.",
+    icon="ℹ️",
 )
 
-tab_queue, tab_findings = st.tabs(["Review queue explorer", "Where the errors live"])
+tab_classifier, tab_queue, tab_findings = st.tabs(
+    ["Classifier performance", "Review queue explorer", "Where the errors live"]
+)
+
+with tab_classifier:
+    st.subheader("How well does the model classify images?")
+    overall_test_acc, per_class_acc = live_classifier_accuracy(val_df)
+    c1, c2 = st.columns(2)
+    c1.metric(
+        "Baseline accuracy (case study, full 60k, 5-fold CV)",
+        f"{summary['baseline_accuracy_pct']}%",
+        "frozen MobileNetV2 embeddings + logistic regression",
+    )
+    c2.metric(
+        "Accuracy, live on this demo's test-set slice",
+        f"{overall_test_acc:.1%}",
+        f"{int((val_df['true_label_name'] == val_df['predicted_label_name']).sum()):,} / {len(val_df):,} correct",
+    )
+    fig_acc = px.bar(
+        per_class_acc, x="accuracy", y="true_label_name", orientation="h",
+        title="Per-class accuracy (test-set slice, computed live)",
+        color_discrete_sequence=["#3E7C74"],
+    )
+    fig_acc.update_layout(
+        xaxis_tickformat=".0%", yaxis_title="", xaxis_title="Accuracy",
+        height=380,
+    )
+    st.plotly_chart(fig_acc, width="stretch")
+    st.caption(
+        "CPU-only, frozen embeddings, no fine-tuning — a fully fine-tuned CNN "
+        "typically reaches 90-95%+ on CIFAR-10, so this is the honest cost of that "
+        "trade-off, not a state-of-the-art result. **Cat and dog are the hardest "
+        "classes** (69.5% / 75.7% here), **automobile and ship the easiest** "
+        "(89.5% / 88.2%) — the classic animal-vs-vehicle split for CIFAR-10. This "
+        "per-class weakness is also why cat/dog dominate the flagged review queue: "
+        "see the *Where the errors live* tab."
+    )
 
 with tab_queue:
+    st.subheader("How well does the QA process catch label errors?")
+    precision, recall, n_reviewed_flagged, n_confirmed_in_reviewed, n_confirmed, n_confirmed_caught = \
+        live_precision_recall(val_df)
+    k1, k2, k3 = st.columns(3)
+    k1.metric("Precision (reviewed pool)", f"{precision:.1%}", f"{n_confirmed_in_reviewed}/{n_reviewed_flagged}")
+    k2.metric("Recall (known errors)", f"{recall:.1%}", f"{n_confirmed_caught}/{n_confirmed}")
+    k3.metric("Images flagged", f"{summary['n_flagged']:,}", f"of {summary['n_total']:,} total")
+    st.caption(
+        "Computed live, in this app, by joining the review queue against the "
+        "published `cleanlab/label-errors` ground truth bundled in `demo_assets/` — "
+        "not hardcoded from the case study. Note this measures something different "
+        "from classifier accuracy (previous tab): only 54 of CIFAR-10's 10,000 test "
+        "images have a confirmed label error, so this is a needle-in-a-haystack "
+        "search, not an ordinary classification task."
+    )
+
     st.subheader("Prioritized review queue")
     st.caption(
         "The pipeline's actual deliverable: every flagged image, ranked by confidence "
