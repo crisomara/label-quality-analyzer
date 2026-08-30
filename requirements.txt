@@ -11,3 +11,6 @@ seaborn
 jupyter
 requests
 tqdm
+streamlit
+plotly
+pillow

@@ -1,0 +1,46 @@
+{
+  "precision_reviewed_pct": 20.2,
+  "precision_reviewed_frac": "23/114",
+  "recall_known_errors_pct": 42.6,
+  "recall_known_errors_frac": "23/54",
+  "baseline_accuracy_pct": 82.9,
+  "n_flagged": 6439,
+  "n_total": 60000,
+  "before_after_impact": [
+    {
+      "k_corrected": 0,
+      "acc_on_clean_eval_subset": 0.4615384615384615,
+      "acc_on_corrected_full_test": 0.8234
+    },
+    {
+      "k_corrected": 50,
+      "acc_on_clean_eval_subset": 0.4615384615384615,
+      "acc_on_corrected_full_test": 0.8249
+    },
+    {
+      "k_corrected": 100,
+      "acc_on_clean_eval_subset": 0.4343891402714932,
+      "acc_on_corrected_full_test": 0.8236
+    },
+    {
+      "k_corrected": 250,
+      "acc_on_clean_eval_subset": 0.4479638009049774,
+      "acc_on_corrected_full_test": 0.8251
+    },
+    {
+      "k_corrected": 500,
+      "acc_on_clean_eval_subset": 0.4389140271493212,
+      "acc_on_corrected_full_test": 0.8288
+    },
+    {
+      "k_corrected": 1000,
+      "acc_on_clean_eval_subset": 0.4479638009049774,
+      "acc_on_corrected_full_test": 0.8326
+    },
+    {
+      "k_corrected": 5320,
+      "acc_on_clean_eval_subset": 0.5610859728506787,
+      "acc_on_corrected_full_test": 0.8683
+    }
+  ]
+}

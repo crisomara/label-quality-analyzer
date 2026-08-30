@@ -9,6 +9,7 @@ whether it *looks* like it works.
 correct, and can you trust an automated QA process to catch the bad ones?
 
 📄 **[Read the case study](reports/case_study.md)** — full methodology, every number sourced to a notebook cell, including the parts that didn't go as expected
+🖥️ **Live demo** — *link added once deployed; run locally with `streamlit run app.py`* — browse the flagged review queue image-by-image and see precision/recall computed live against the published ground truth
 
 ## Results
 
@@ -56,11 +57,13 @@ flowchart LR
     G --> J[Before/after impact\nsimulated correction]
 ```
 
-The offline pipeline is entirely notebook-driven (`notebooks/01` through `04`); no
-serving layer or live demo — this is a QA/analysis case study, not a deployed
-service. `src/` holds the reusable loading, embedding-extraction, confident-learning,
-and database code every notebook imports, so the same logic isn't copy-pasted
-across notebooks.
+The analysis pipeline itself is entirely notebook-driven (`notebooks/01` through
+`04`) — this is a QA/analysis case study, not a deployed prediction service.
+`src/` holds the reusable loading, embedding-extraction, confident-learning, and
+database code every notebook imports, so the same logic isn't copy-pasted across
+notebooks. `app.py` is a separate, lightweight Streamlit demo that lets a visitor
+browse the pipeline's output (the review queue and validation results) without
+running any of the above themselves — see [Live demo](#live-demo) below.
 
 ## Data
 
@@ -139,6 +142,40 @@ scratch; each depends on cached artifacts (`data/cache/`) or the SQLite database
 from the ones before it. Notebook 02 is the slow one — extracting frozen
 embeddings for 60,000 images and cross-validating a classifier takes roughly
 20 minutes on CPU; the rest run in a few minutes each.
+
+## Live demo
+
+`app.py` is a Streamlit app for browsing the pipeline's output interactively:
+filter the 6,439-image review queue by class/category, inspect any flagged image
+against the model's prediction, and see precision/recall — 20.2% and 42.6% — as
+well as the confusion-pair and before/after-correction charts, all computed live
+in the app from a bundled slice of the pipeline's real output.
+
+It does **not** need CIFAR-10, torch, or cleanlab at runtime. It reads a small
+(~20MB) precomputed bundle at `demo_assets/` (images, the review queue, and the
+ground-truth join needed for validation), built once from the notebook pipeline's
+cached artifacts by `scripts/build_demo_bundle.py` and committed to the repo.
+
+Run it locally:
+
+```
+streamlit run app.py
+```
+
+To regenerate `demo_assets/` after re-running the notebooks (e.g. new embeddings
+or a different classifier):
+
+```
+python scripts/build_demo_bundle.py
+```
+
+(requires `data/cache/` and `data/raw/cifar10/` populated — i.e. notebooks 01-03
+already run.)
+
+**Deploying:** push this repo to GitHub, then on
+[share.streamlit.io](https://share.streamlit.io) point a new app at this repo with
+main file `app.py`. `demo_assets/` is already committed so no extra setup is
+needed on the hosting side.
 
 ## License
 
