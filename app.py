@@ -116,14 +116,22 @@ with tab_queue:
     n_pages = max(1, (len(filtered) - 1) // page_size + 1)
     st.session_state.page = min(st.session_state.page, n_pages - 1)
     nav1, nav2, nav3 = st.columns([1, 2, 1])
-    if nav1.button("← Previous", disabled=st.session_state.page == 0):
+    prev_clicked = nav1.button("← Previous", disabled=st.session_state.page == 0)
+    next_clicked = nav3.button("Next →", disabled=st.session_state.page >= n_pages - 1)
+    # Rerun immediately on click rather than falling through: st.button() only
+    # returns True for the single rerun right after the click, so the label and
+    # the other button's disabled state below would otherwise render with the
+    # pre-click page number, one step behind the page_df computed further down.
+    if prev_clicked:
         st.session_state.page -= 1
+        st.rerun()
+    if next_clicked:
+        st.session_state.page += 1
+        st.rerun()
     nav2.markdown(
         f"<div style='text-align:center'>Page {st.session_state.page + 1} of {n_pages}</div>",
         unsafe_allow_html=True,
     )
-    if nav3.button("Next →", disabled=st.session_state.page >= n_pages - 1):
-        st.session_state.page += 1
 
     page_df = filtered.iloc[
         st.session_state.page * page_size: (st.session_state.page + 1) * page_size
