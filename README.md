@@ -9,7 +9,7 @@ whether it *looks* like it works.
 correct, and can you trust an automated QA process to catch the bad ones?
 
 📄 **[Read the case study](reports/case_study.md)** — full methodology, every number sourced to a notebook cell, including the parts that didn't go as expected
-🖥️ **Live demo** — *link added once deployed; run locally with `streamlit run app.py`* — browse the flagged review queue image-by-image and see precision/recall computed live against the published ground truth
+🖥️ **[Live demo](https://label-quality-analyzer.streamlit.app/)** — browse the flagged review queue image-by-image and see precision/recall computed live against the published ground truth
 
 ## Results
 
@@ -172,10 +172,7 @@ python scripts/build_demo_bundle.py
 (requires `data/cache/` and `data/raw/cifar10/` populated — i.e. notebooks 01-03
 already run.)
 
-**Deploying:** push this repo to GitHub, then on
-[share.streamlit.io](https://share.streamlit.io) point a new app at this repo with
-main file `app.py`. `demo_assets/` is already committed so no extra setup is
-needed on the hosting side.
+**Deployed at [label-quality-analyzer.streamlit.app](https://label-quality-analyzer.streamlit.app/)** via Streamlit Community Cloud, pointed at this repo's `master` branch with main file `app.py`. `demo_assets/` is already committed so no extra setup was needed on the hosting side.
 
 ## License
 
