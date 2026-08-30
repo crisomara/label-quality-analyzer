@@ -18,10 +18,103 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent
 ASSETS = ROOT / "demo_assets"
 
+# Palette pulled from mode.com's live site (deep forest green + cream + lime
+# accent) as a design reference — see reports/case_study.md's own copper/teal
+# system for the rest of the project; this app intentionally uses a different,
+# bolder palette scoped to just the interactive demo.
+BG = "#EEF2E3"
+CARD = "#FFFFFF"
+INK = "#0B2B20"
+DARK = "#043F2E"
+LIME = "#C8F169"
+LIME_MID = "#78C51C"
+GREEN_MID = "#2A6F2B"
+WARN = "#DB4049"
+
 st.set_page_config(
     page_title="Label Quality Analyzer",
     page_icon="\U0001F50D",
     layout="wide",
+)
+
+_CSS = f"""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+html, body, [class*="css"] {{ font-family: 'Inter', sans-serif; }}
+.stApp {{ background-color: {BG}; }}
+h1, h2, h3 {{
+font-family: 'Fraunces', serif !important;
+color: {DARK} !important;
+font-weight: 700 !important;
+letter-spacing: -0.01em;
+}}
+h1 {{ font-size: 2.6rem !important; }}
+
+[data-testid="stMetric"] {{
+background-color: {CARD};
+border-radius: 16px;
+padding: 1rem 1.2rem;
+box-shadow: 0 1px 3px rgba(4, 63, 46, 0.08);
+border: 1px solid rgba(4, 63, 46, 0.08);
+}}
+[data-testid="stMetricValue"] {{ color: {DARK}; font-weight: 700; }}
+[data-testid="stMetricLabel"] {{ color: {INK}; opacity: 0.75; }}
+
+.stButton > button {{
+background-color: {LIME};
+color: {DARK};
+border: none;
+border-radius: 999px;
+font-weight: 600;
+padding: 0.4rem 1.2rem;
+transition: background-color 0.15s ease;
+}}
+.stButton > button:hover {{
+background-color: {LIME_MID};
+color: {CARD};
+}}
+.stButton > button:disabled {{
+background-color: rgba(4, 63, 46, 0.08);
+color: rgba(11, 43, 32, 0.35);
+}}
+
+[data-testid="stTabs"] button[data-baseweb="tab"] {{
+font-weight: 600;
+color: {INK};
+opacity: 0.6;
+}}
+[data-testid="stTabs"] button[aria-selected="true"] {{
+opacity: 1;
+color: {DARK};
+}}
+[data-testid="stTabs"] [data-baseweb="tab-highlight"] {{
+background-color: {LIME_MID} !important;
+height: 3px;
+}}
+
+[data-testid="stAlert"] {{
+background-color: {CARD};
+border-radius: 16px;
+border-left: 4px solid {LIME_MID};
+}}
+
+[data-testid="stImage"] img {{
+border-radius: 10px;
+}}
+
+div[data-testid="stVerticalBlockBorderWrapper"] {{
+border-radius: 16px !important;
+}}
+</style>
+"""
+st.html(_CSS)
+
+PLOTLY_LAYOUT = dict(
+    paper_bgcolor=BG,
+    plot_bgcolor=BG,
+    font=dict(family="Inter, sans-serif", color=INK),
 )
 
 
@@ -72,6 +165,26 @@ st.caption(
     "[Full case study](https://github.com/crisomara/label-quality-analyzer/blob/master/reports/case_study.md) · "
     "[Source](https://github.com/crisomara/label-quality-analyzer)"
 )
+
+with st.container(border=True):
+    st.markdown(
+        "**What this is** — a live, interactive companion to the case study. It "
+        "reads the same review queue and validation results the notebooks "
+        "produced (bundled in `demo_assets/`), so you can explore them here "
+        "without running any code yourself."
+    )
+    st.markdown(
+        "**How to use it**\n"
+        "- **Classifier performance** — the model's actual image-classification "
+        "accuracy, overall and per class.\n"
+        "- **Review queue explorer** — filter the 6,439 flagged images by class, "
+        "category, or split; page through them; click **Inspect** on any "
+        "thumbnail for a full-size view against the model's prediction and the "
+        "published ground truth.\n"
+        "- **Where the errors live** — which classes get confused with which, "
+        "and whether correcting the flagged images actually improves the model."
+    )
+
 st.info(
     "This project asks two separate questions, and it's easy to conflate them: "
     "**(1) how well does the model classify images?** (see the *Classifier "
@@ -104,11 +217,11 @@ with tab_classifier:
     fig_acc = px.bar(
         per_class_acc, x="accuracy", y="true_label_name", orientation="h",
         title="Per-class accuracy (test-set slice, computed live)",
-        color_discrete_sequence=["#3E7C74"],
+        color_discrete_sequence=[LIME_MID],
     )
     fig_acc.update_layout(
         xaxis_tickformat=".0%", yaxis_title="", xaxis_title="Accuracy",
-        height=380,
+        height=380, **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig_acc, width="stretch")
     st.caption(
@@ -245,9 +358,11 @@ with tab_findings:
     fig = px.bar(
         pair_counts, x="count", y="pair", orientation="h",
         title="Top confirmed-error label pairs (given → MTurk-guessed true label)",
-        color_discrete_sequence=["#B5652A"],
+        color_discrete_sequence=[WARN],
     )
-    fig.update_layout(yaxis={"categoryorder": "total ascending"}, height=400)
+    fig.update_layout(
+        yaxis={"categoryorder": "total ascending"}, height=400, **PLOTLY_LAYOUT,
+    )
     st.plotly_chart(fig, width="stretch")
     st.caption(
         "cat→dog and automobile→truck were the hypothesized confusions going in; "
@@ -260,12 +375,14 @@ with tab_findings:
     fig2 = go.Figure()
     fig2.add_trace(go.Scatter(
         x=impact["k_corrected"], y=impact["acc_on_corrected_full_test"],
-        mode="lines+markers", line_color="#3E7C74", name="Accuracy after correcting top-K",
+        mode="lines+markers", line_color=DARK,
+        marker=dict(color=LIME_MID, size=8),
+        name="Accuracy after correcting top-K",
     ))
     fig2.update_layout(
         title="Before/after retraining simulation: correcting the top-K flagged items",
         xaxis_title="Images corrected (K)", yaxis_title="Accuracy on corrected full test set",
-        height=380,
+        height=380, **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig2, width="stretch")
     st.caption(
