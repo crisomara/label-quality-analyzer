@@ -1,5 +1,8 @@
 # Label Quality Analyzer
 
+[![CI](https://github.com/crisomara/label-quality-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/crisomara/label-quality-analyzer/actions/workflows/ci.yml)
+[![Security](https://github.com/crisomara/label-quality-analyzer/actions/workflows/security.yml/badge.svg)](https://github.com/crisomara/label-quality-analyzer/actions/workflows/security.yml)
+
 A confident-learning QA pipeline that flags likely mislabeled CIFAR-10 images and
 scores its own output against a published, human-verified answer key — a case study
 in whether an automated data-quality process can actually be trusted, not just
@@ -173,6 +176,22 @@ python scripts/build_demo_bundle.py
 already run.)
 
 **Deployed at [label-quality-analyzer.streamlit.app](https://label-quality-analyzer.streamlit.app/)** via Streamlit Community Cloud, pointed at this repo's `master` branch with main file `app.py`. `demo_assets/` is already committed so no extra setup was needed on the hosting side.
+
+## CI
+
+GitHub Actions runs on every push and pull request. The notebooks are never executed in CI (they download CIFAR-10 and extract 60,000 CNN embeddings).
+
+- **CI** (`ci.yml`): ruff over the code and notebooks (`ruff.toml`); nbformat schema validation of every notebook with sizes in the job summary; pytest with coverage for `src/qa.py` and `src/db.py`, a consistency check of `demo_assets/`, and a Streamlit `AppTest` smoke test that renders `app.py`; an offline lychee check of internal links and images on the GitHub Pages landing page, this README and the case study.
+- **Security** (`security.yml`, also weekly): gitleaks over the full history, pip-audit on `requirements.txt` and `requirements-ci.txt`, CodeQL (Python), dependency review on pull requests, and actionlint.
+- Dependabot opens grouped weekly updates for pip and GitHub Actions.
+
+CI installs the light `requirements-ci.txt` (no torch/torchvision). Locally:
+
+```bash
+pip install -r requirements-ci.txt
+ruff check .
+pytest
+```
 
 ## License
 
