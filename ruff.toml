@@ -1,0 +1,12 @@
+target-version = "py310"
+extend-include = ["*.ipynb"]
+
+[lint]
+# Ruff's default rule set. Formatting is not enforced: the existing code
+# predates any formatter.
+select = ["E4", "E7", "E9", "F"]
+
+[lint.per-file-ignores]
+# Notebooks import after a sys.path setup cell and use a few one-line
+# statements for plotting; keep them to the correctness rules.
+"*.ipynb" = ["E402", "E702", "F401"]

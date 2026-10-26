@@ -1,0 +1,15 @@
+# Lightweight environment for CI: the Streamlit demo, the pure-Python QA and
+# database modules, and the test/lint tooling. torch/torchvision (only needed
+# to re-run the notebooks and src/embeddings.py) are deliberately left out.
+numpy
+pandas
+pyarrow
+scikit-learn
+cleanlab
+streamlit
+plotly
+pillow
+nbformat==5.10.4
+pytest==9.0.3
+pytest-cov==7.0.0
+ruff==0.14.0
